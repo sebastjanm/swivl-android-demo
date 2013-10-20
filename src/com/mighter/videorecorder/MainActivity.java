@@ -28,7 +28,7 @@ public class MainActivity extends Activity {
 
 	private Button mRecordButton;
     private ListView mVideosListView;
-    private ArrayAdapter<String> mAdapter;
+    private ArrayAdapter<Video> mAdapter;
 
     private boolean mIsRecording;
 
@@ -40,10 +40,25 @@ public class MainActivity extends Activity {
         mIsRecording = false;
 
         mCamera = getCameraInstance();
-        mVideoManager = new VideoManager();
+        mVideoManager = new VideoManager(this);
+        mVideoManager.open();
 
 		initUI();
 	}
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mVideoManager.open();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        releaseMediaRecorder();
+        releaseCamera();
+        mVideoManager.close();
+    }
 
 	private void initUI() {
         mCameraSurfaceView = new CameraSurfaceView(this, mCamera);
@@ -52,7 +67,7 @@ public class MainActivity extends Activity {
 
         mRecordButton = (Button) findViewById(R.id.mybutton);
         mVideosListView = (ListView) findViewById(R.id.video_list);
-        mAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mVideoManager.getRecordedVideos());
+        mAdapter = new ArrayAdapter<Video>(this, android.R.layout.simple_list_item_1, mVideoManager.getAllVideos());
         mVideosListView.setAdapter(mAdapter);
 	}
 
@@ -85,7 +100,7 @@ public class MainActivity extends Activity {
 
         mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_LOW));
 
-        mMediaRecorder.setOutputFile(mVideoManager.getNewFileName());
+        mMediaRecorder.setOutputFile(mVideoManager.createVideo());
         mMediaRecorder.setMaxDuration(MAX_DURATION);
         mMediaRecorder.setMaxFileSize(MAX_FILE_SIZE);
 
@@ -102,14 +117,6 @@ public class MainActivity extends Activity {
 		}
 		return true;
 
-	}
-
-	@Override
-	protected void onPause() {
-		super.onPause();
-
-		releaseMediaRecorder();
-		releaseCamera();
 	}
 
 	private void releaseMediaRecorder() {
@@ -146,7 +153,6 @@ public class MainActivity extends Activity {
         mIsRecording = false;
         mRecordButton.setText("REC");
 		releaseMediaRecorder();
-        mVideoManager.getRecordedVideos();
         mAdapter.notifyDataSetChanged();
 	}
 }
