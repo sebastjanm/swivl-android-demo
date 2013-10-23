@@ -1,25 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:layout_height="fill_parent" >
 
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/videoview"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_width="720px"
+        android:layout_height="480px" />
+
+    <Button
+        android:id="@+id/mybutton"
+        android:layout_toRightOf="@+id/videoview"
+        android:layout_alignParentTop="true"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:orientation="horizontal" >
+        android:layout_height="wrap_content"
+        android:text="REC"
+        android:textSize="12dp"
+        android:onClick="onButtonClick"/>
 
-        <FrameLayout
-            android:id="@+id/videoview"
-            android:layout_width="720px"
-            android:layout_height="480px" />
+    <ListView
+        android:id="@+id/video_list"
+        android:layout_below="@+id/mybutton"
+        android:layout_toRightOf="@+id/videoview"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        />
 
-        <Button
-            android:id="@+id/mybutton"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="REC"
-            android:textSize="12dp" />
-    </LinearLayout>
-
-</LinearLayout>
+</RelativeLayout>

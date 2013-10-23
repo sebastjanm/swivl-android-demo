@@ -1,62 +1,74 @@
 package com.mighter.videorecorder;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import android.app.Activity;
-import android.content.Context;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.Toast;
+import android.widget.*;
 
-public class MainActivity extends Activity implements OnClickListener {
+public class MainActivity extends Activity {
 
 	private static final String TAG = "MainActivity";
 
-	private static final String FILE_NAME = "/myvideo.mp4";
-	
 	private static final int MAX_FILE_SIZE = 5 * 1000 * 1000;
 	private static final int MAX_DURATION = 60 * 1000;
 
-	private Camera myCamera;
-	private MyCameraSurfaceView myCameraSurfaceView;
-	private MediaRecorder mediaRecorder;
+	private Camera mCamera;
+	private CameraSurfaceView mCameraSurfaceView;
+	private MediaRecorder mMediaRecorder;
+    private VideoManager mVideoManager;
 
-	private String filePath;
+	private Button mRecordButton;
+    private ListView mVideosListView;
+    private ArrayAdapter<Video> mAdapter;
 
-	Button recordButton;
-	SurfaceHolder surfaceHolder;
-	boolean recording;
+    private boolean mIsRecording;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		recording = false;
-		filePath = Environment.getExternalStorageDirectory() + FILE_NAME;
+        mIsRecording = false;
 
-		myCamera = getCameraInstance();
+        mCamera = getCameraInstance();
+        mVideoManager = new VideoManager(this);
+        mVideoManager.open();
 
 		initUI();
 	}
 
-	private void initUI() {
-		myCameraSurfaceView = new MyCameraSurfaceView(this, myCamera);
-		FrameLayout myCameraPreview = (FrameLayout) findViewById(R.id.videoview);
-		myCameraPreview.addView(myCameraSurfaceView);
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mVideoManager.open();
+    }
 
-		recordButton = (Button) findViewById(R.id.mybutton);
-		recordButton.setOnClickListener(this);
+    @Override
+    protected void onPause() {
+        super.onPause();
+        releaseMediaRecorder();
+        releaseCamera();
+        mVideoManager.close();
+    }
+
+	private void initUI() {
+        mCameraSurfaceView = new CameraSurfaceView(this, mCamera);
+		FrameLayout myCameraPreview = (FrameLayout) findViewById(R.id.videoview);
+		myCameraPreview.addView(mCameraSurfaceView);
+
+        mRecordButton = (Button) findViewById(R.id.mybutton);
+        mVideosListView = (ListView) findViewById(R.id.video_list);
+        mAdapter = new ArrayAdapter<Video>(this, android.R.layout.simple_list_item_1, mVideoManager.getAllVideos());
+        mVideosListView.setAdapter(mAdapter);
 	}
 
 	private Camera getCameraInstance() {
@@ -70,32 +82,32 @@ public class MainActivity extends Activity implements OnClickListener {
 	}
 
 	private void releaseCamera() {
-		if (myCamera != null) {
-			myCamera.release();
-			myCamera = null;
+		if (mCamera != null) {
+            mCamera.release();
+            mCamera = null;
 		}
 	}
 
 	private boolean prepareMediaRecorder() {
-		myCamera = getCameraInstance();
-		mediaRecorder = new MediaRecorder();
+        mCamera = getCameraInstance();
+        mMediaRecorder = new MediaRecorder();
 
-		myCamera.unlock();
-		mediaRecorder.setCamera(myCamera);
+        mCamera.unlock();
+        mMediaRecorder.setCamera(mCamera);
 
-		mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-		mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+        mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+        mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
 
-		mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_LOW));
+        mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_LOW));
 
-		mediaRecorder.setOutputFile(filePath);
-		mediaRecorder.setMaxDuration(MAX_DURATION);
-		mediaRecorder.setMaxFileSize(MAX_FILE_SIZE);
+        mMediaRecorder.setOutputFile(mVideoManager.createVideo());
+        mMediaRecorder.setMaxDuration(MAX_DURATION);
+        mMediaRecorder.setMaxFileSize(MAX_FILE_SIZE);
 
-		mediaRecorder.setPreviewDisplay(myCameraSurfaceView.getHolder().getSurface());
+        mMediaRecorder.setPreviewDisplay(mCameraSurfaceView.getHolder().getSurface());
 
 		try {
-			mediaRecorder.prepare();
+            mMediaRecorder.prepare();
 		} catch (IllegalStateException e) {
 			releaseMediaRecorder();
 			return false;
@@ -107,75 +119,17 @@ public class MainActivity extends Activity implements OnClickListener {
 
 	}
 
-	@Override
-	protected void onPause() {
-		super.onPause();
-
-		releaseMediaRecorder();
-		releaseCamera();
-	}
-
 	private void releaseMediaRecorder() {
-		if (mediaRecorder != null) {
-			mediaRecorder.reset();
-			mediaRecorder.release();
-			mediaRecorder = null;
-			myCamera.lock();
+		if (mMediaRecorder != null) {
+            mMediaRecorder.reset();
+            mMediaRecorder.release();
+            mMediaRecorder = null;
+            mCamera.lock();
 		}
 	}
 
-	public class MyCameraSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
-
-		private SurfaceHolder mHolder;
-		private Camera mCamera;
-
-		public MyCameraSurfaceView(Context context, Camera camera) {
-			super(context);
-			mCamera = camera;
-
-			mHolder = getHolder();
-			mHolder.addCallback(this);
-		}
-
-		@Override
-		public void surfaceChanged(SurfaceHolder holder, int format, int weight, int height) {
-
-			if (mHolder.getSurface() == null) {
-				return;
-			}
-
-			try {
-				mCamera.stopPreview();
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage());
-			}
-			try {
-				mCamera.setPreviewDisplay(mHolder);
-				mCamera.startPreview();
-
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage());
-			}
-		}
-
-		@Override
-		public void surfaceCreated(SurfaceHolder holder) {
-			try {
-				mCamera.setPreviewDisplay(holder);
-				mCamera.startPreview();
-			} catch (IOException e) {
-				Log.e(TAG, e.getMessage());
-			}
-		}
-
-		@Override
-		public void surfaceDestroyed(SurfaceHolder holder) {
-		}
-	}
-
-	@Override
-	public void onClick(View v) {
-		if (recording) {
+	public void onButtonClick(View v) {
+		if (mIsRecording) {
 			stopRecordingVideo();
 		} else {
 			startRecordingVideo();
@@ -189,15 +143,16 @@ public class MainActivity extends Activity implements OnClickListener {
 			Toast.makeText(MainActivity.this, "Fail in prepareMediaRecorder()!\n - Ended -", Toast.LENGTH_LONG).show();
 		}
 
-		mediaRecorder.start();
-		recording = true;
-		recordButton.setText("STOP");
+        mMediaRecorder.start();
+        mIsRecording = true;
+        mRecordButton.setText("STOP");
 	}
 
 	private void stopRecordingVideo() {
-		mediaRecorder.stop();
-		recording = false;
-		recordButton.setText("REC");
+        mMediaRecorder.stop();
+        mIsRecording = false;
+        mRecordButton.setText("REC");
 		releaseMediaRecorder();
+        mAdapter.notifyDataSetChanged();
 	}
 }
