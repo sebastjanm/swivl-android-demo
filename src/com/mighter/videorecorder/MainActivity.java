@@ -1,7 +1,7 @@
 package com.mighter.videorecorder;
-
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import android.app.Activity;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
@@ -11,9 +11,11 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.Toast;
-import com.mighter.videorecorder.data.Video;
+import com.mighter.videorecorder.adapters.VideosListAdapter;
 import com.mighter.videorecorder.system.DBHelper;
 import com.mighter.videorecorder.system.VideoManager;
 import com.mighter.videorecorder.view.CameraSurfaceView;
@@ -32,26 +34,42 @@ public class MainActivity extends Activity implements OnClickListener {
 	private Button btnRec;
 	private SurfaceHolder surfaceHolder;
 	boolean recording;
-    private Video currentVideo;
     private VideoManager videoManager;
+    private ListView videosListView;
+    private ArrayAdapter adapter;
+
     @Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+        DBHelper.init(this);
+        videoManager = new VideoManager(this);
 		setContentView(R.layout.main);
-		videoManager = new VideoManager(this);
 		camera = getCameraInstance();
-		initUI();
         videoManager.updateVideos();
+        initUI();
 	}
 
-	private void initUI() {
-		cameraSurfaceView = (CameraSurfaceView) findViewById(R.id.cameraPreview);
+    @Override
+    protected void onStop() {
+        super.onStop();
+        DBHelper.getInstance().release();
+    }
+
+    private void initUI() {
+        cameraSurfaceView = (CameraSurfaceView) findViewById(R.id.cameraPreview);
         cameraSurfaceView.setCamera(camera);
 		btnRec = (Button) findViewById(R.id.btnRec);
 		btnRec.setOnClickListener(this);
+        videosListView = (ListView)findViewById(R.id.videosListView);
+        adapter = getVideosListAdapter();
+        videosListView.setAdapter(adapter);
 	}
 
-	private Camera getCameraInstance() {
+    private VideosListAdapter getVideosListAdapter() {
+        return new VideosListAdapter(this, Arrays.asList(videoManager.getAllVideos()));
+    }
+
+    private Camera getCameraInstance() {
 		Camera camera = null;
 		try {
 			camera = Camera.open();
@@ -79,11 +97,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
 
 		mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_LOW));
-        VideoManager videoManager = new VideoManager(this);
-        currentVideo = videoManager.createNewVideo();
-        createOutputFile(currentVideo.getUri());
-        Log.d("URI", String.valueOf(currentVideo.getUri()));
-        mediaRecorder.setOutputFile(currentVideo.getUri());
+        mediaRecorder.setOutputFile(videoManager.getNewVideoName());
 		mediaRecorder.setMaxDuration(MAX_DURATION);
 		mediaRecorder.setMaxFileSize(MAX_FILE_SIZE);
 		mediaRecorder.setPreviewDisplay(cameraSurfaceView.getHolder().getSurface());
@@ -155,8 +169,11 @@ public class MainActivity extends Activity implements OnClickListener {
 	private void stopRecordingVideo() {
 		mediaRecorder.stop();
         recording = false;
-        DBHelper.getInstance(this).add(currentVideo);
 		btnRec.setText("REC");
+        videoManager.updateVideos();
 		releaseMediaRecorder();
+        adapter = getVideosListAdapter();
+        videosListView.setAdapter(adapter);
+        adapter.notifyDataSetChanged();
 	}
 }

@@ -8,10 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 import com.mighter.videorecorder.data.Video;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class DBHelper extends SQLiteOpenHelper {
 
@@ -31,10 +28,11 @@ public class DBHelper extends SQLiteOpenHelper {
     super(context, DB_NAME, null,1);
   }
 
-    public static DBHelper getInstance(Context context) {
-        if(sDBHelper==null){
-            sDBHelper = new DBHelper(context);
-        }
+    public static void init(Context context){
+        sDBHelper = new DBHelper(context);
+    }
+
+    public static DBHelper getInstance() {
         return sDBHelper;
     }
 
@@ -51,6 +49,8 @@ public class DBHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         //Ignored
     }
+
+
 
   public void add(Video video){
     SQLiteDatabase db = getWritableDatabase();
@@ -69,25 +69,31 @@ public class DBHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-    public List<Video> getAllVideos(){
+    public Video[] getAllVideos(){
         List<Video> videos = new ArrayList<Video>();
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, COLUMNS, null, null, null, null, null);
+        Cursor cursor = getAllFields();
         cursor.moveToFirst();
-        if(cursor.getCount()==0) return videos;
+        if(cursor.getCount()==0) return new Video[0];
         do{
             Video video = new Video(cursor.getString(1), cursor.getString(2));
             video.setDescription(cursor.getString(3));
             videos.add(video);
         }while (cursor.moveToNext());
         cursor.close();
-        return videos;
+        Video[] videosArray = new Video[videos.size()];
+        videos.toArray(videosArray);
+        return videosArray;
     }
 
+    public Cursor getAllFields() {
+        SQLiteDatabase db = getReadableDatabase();
+        return db.query(TABLE_NAME, COLUMNS, null, null, null, null, null);
+    }
 
 
     public void updateVideos(List<Video> videos){
         SQLiteDatabase db = getWritableDatabase();
+        Cursor cursor = getAllFields();
         for(Video video:videos){
             ContentValues cv = new ContentValues();
             cv.put(ID, video.getId());
@@ -95,6 +101,14 @@ public class DBHelper extends SQLiteOpenHelper {
             cv.put(NAME, video.getName());
             cv.put(DESCRIPTION, video.getDescription());
             db.insertWithOnConflict(TABLE_NAME, null, cv, SQLiteDatabase.CONFLICT_IGNORE);
+        }
+        if(cursor.getCount()>videos.size()){
+            List<Video> allVideos = Arrays.asList(getAllVideos());
+            for(Video video:allVideos){
+                if(!videos.contains(video)){
+                    remove(video);
+                }
+            }
         }
         db.close();
     }

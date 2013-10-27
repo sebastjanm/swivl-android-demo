@@ -19,22 +19,20 @@ import java.util.List;
 public class VideoManager {
     public static final String DOT = ".";
     public static final String DEFAULT_EXTENSION = "mp4";
+    private static final String VIDEO_EXTENSIONS_REGEXP = "^.+\\.((mp4)|(3gp))$";
+    private static final String FILE_EXTENSIONS_REGEXP = "(\\.[a-zA-Z0-9]{3}$)";
     private Context context;
 
     public VideoManager(Context context) {
         this.context = context;
     }
 
-    public Video createNewVideo(String path, String extension, String name){
-        return new Video(path+name+Video.DOT+extension, name);
+    public String getNewVideoName(){
+        return getDefaultPath()+File.separator+getDefaultName()+Video.DOT+DEFAULT_EXTENSION;
     }
 
-    public Video createNewVideo(){
-        return createNewVideo(getDefaultPath(), DEFAULT_EXTENSION, getDefaultName());
-    }
-
-    public List<Video> getAllVideos(){
-        return DBHelper.getInstance(context).getAllVideos();
+    public Video[] getAllVideos(){
+        return DBHelper.getInstance().getAllVideos();
     }
 
     private String getDefaultPath(){
@@ -62,13 +60,13 @@ public class VideoManager {
 
     public void updateVideos(){
         File videosDir = new File(getDefaultPath());
-        File[] files = videosDir.listFiles(new VideoFileFilter("^.+\\.((mp4)|(3gp))$"));
+        File[] files = videosDir.listFiles(new VideoFileFilter(VIDEO_EXTENSIONS_REGEXP));
         List<Video> videos = new ArrayList<Video>();
         for(File f:files){
-            String name = f.getName().replaceAll(DEFAULT_EXTENSION,"");
+            String name = f.getName().replaceAll(FILE_EXTENSIONS_REGEXP,"");
             Video video = new Video(f.getAbsolutePath(), name);
             videos.add(video);
         }
-        DBHelper.getInstance(context).updateVideos(videos);
+        DBHelper.getInstance().updateVideos(videos);
     }
 }
