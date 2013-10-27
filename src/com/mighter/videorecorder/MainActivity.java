@@ -26,8 +26,10 @@ public class MainActivity extends Activity implements OnClickListener {
 
 	private static final int MAX_FILE_SIZE = 5 * 1000 * 1000;
 	private static final int MAX_DURATION = 60 * 1000;
+    private static final String STOP = "STOP";
+    private static final String REC = "REC";
 
-	private Camera camera;
+    private Camera camera;
 	private CameraSurfaceView cameraSurfaceView;
 	private MediaRecorder mediaRecorder;
 
@@ -163,17 +165,21 @@ public class MainActivity extends Activity implements OnClickListener {
 		}
 		mediaRecorder.start();
 		recording = true;
-		btnRec.setText("STOP");
+		btnRec.setText(STOP);
 	}
 
 	private void stopRecordingVideo() {
 		mediaRecorder.stop();
         recording = false;
-		btnRec.setText("REC");
+		btnRec.setText(REC);
         videoManager.updateVideos();
 		releaseMediaRecorder();
+        update();
+	}
+
+    private void update() {
         adapter = getVideosListAdapter();
         videosListView.setAdapter(adapter);
         adapter.notifyDataSetChanged();
-	}
+    }
 }

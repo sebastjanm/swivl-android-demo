@@ -1,8 +1,6 @@
 package com.mighter.videorecorder.system;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.text.format.Time;
 import android.util.Log;
@@ -10,10 +8,8 @@ import com.mighter.videorecorder.R;
 import com.mighter.videorecorder.data.Video;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class VideoManager {
@@ -28,7 +24,12 @@ public class VideoManager {
     }
 
     public String getNewVideoName(){
-        return getDefaultPath()+File.separator+getDefaultName()+Video.DOT+DEFAULT_EXTENSION;
+        return getNewVideoName(getDefaultName(), getDefaultPath());
+    }
+
+    public String getNewVideoName(String filename, String folderPath){
+        String newVideoName = folderPath+File.separator+filename+Video.DOT+DEFAULT_EXTENSION;
+        return newVideoName;
     }
 
     public Video[] getAllVideos(){
