@@ -62,15 +62,7 @@ public class VideoManager {
 
     public void updateVideos(){
         File videosDir = new File(getDefaultPath());
-        File[] files = videosDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String filename) {
-                if(filename.lastIndexOf(DEFAULT_EXTENSION)<filename.length()-DEFAULT_EXTENSION.length()){
-                    return false;
-                }
-                return true;
-            }
-        });
+        File[] files = videosDir.listFiles(new VideoFileFilter("^.+\\.((mp4)|(3gp))$"));
         List<Video> videos = new ArrayList<Video>();
         for(File f:files){
             String name = f.getName().replaceAll(DEFAULT_EXTENSION,"");
