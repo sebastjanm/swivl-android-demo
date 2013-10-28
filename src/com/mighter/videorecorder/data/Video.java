@@ -1,38 +1,70 @@
 package com.mighter.videorecorder.data;
 
+import android.net.Uri;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.text.format.Time;
+import android.util.Log;
+
 import java.io.File;
 
 public class Video {
-    private File path;
+    public static final String DOT = ".";
+    private String uri;
     private String description;
     private String name;
-    private String extension;
+    private final int id;
 
-    public Video(File path, String extension, String name, String description) {
-        this.path = path;
+
+    public Video(String uri, String name) {
         this.name = name;
-        this.extension = extension;
-        this.description = description;
+        this.id = name.hashCode();
+        this.uri = uri;
     }
 
-
-    public File getPath() {
-        return path;
+    private void createOutDir(String path) {
+        File outputDir = new File(path);
+        if(outputDir.exists()){
+            return;
+        }
+        outputDir.mkdir();
     }
 
-    public void setPath(File path) {
-        this.path = path;
-    }
 
     public String getDescription() {
         return description;
+    }
+
+    public String getName(){
+        return name;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getUri() {
+        return uri;
     }
 
     public void setDescription(String description) {
         this.description = description;
     }
 
-    public String getName(){
-        return name;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Video)) return false;
+
+        Video video = (Video) o;
+
+        if (id != video.id) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return id;
     }
 }

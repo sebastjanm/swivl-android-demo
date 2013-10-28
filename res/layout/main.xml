@@ -19,13 +19,23 @@
                     >
             </com.mighter.videorecorder.view.CameraSurfaceView>
         </FrameLayout>
-        <Button
-                android:id="@+id/mybutton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="REC"
-                android:textSize="12dp"
-        />
+
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent">
+            <Button
+                    android:id="@+id/btnRec"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="REC"
+                    android:textSize="12dp"
+            />
+            <ListView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/videosListView"/>
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>
